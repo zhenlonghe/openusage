@@ -14,6 +14,7 @@ final class WidgetDataStore {
 
     private static let meterStyleKey = "meterStyle"
     private static let resetDisplayModeKey = "resetDisplayMode"
+    private static let menuBarStyleKey = "menuBarStyle"
     private static let menuBarLimitKey = "menuBarLimit"
     private static let menuBarAlwaysShowsKey = "menuBarAlwaysShows"
     private static let priorityWarningKey = "priorityWarning"
@@ -39,6 +40,10 @@ final class WidgetDataStore {
 
     var resetDisplayMode: ResetDisplayMode {
         didSet { defaults.set(resetDisplayMode.rawValue, forKey: Self.resetDisplayModeKey) }
+    }
+
+    var menuBarStyle: MenuBarStyle {
+        didSet { defaults.set(menuBarStyle.rawValue, forKey: Self.menuBarStyleKey) }
     }
 
     var menuBarLimit: MenuBarLimit {
@@ -99,6 +104,7 @@ final class WidgetDataStore {
         self.offlineRetryDelays = offlineRetryDelays
         self.meterStyle = defaults.enumValue(forKey: Self.meterStyleKey, default: .remaining)
         self.resetDisplayMode = defaults.enumValue(forKey: Self.resetDisplayModeKey, default: .relative)
+        self.menuBarStyle = defaults.enumValue(forKey: Self.menuBarStyleKey, default: .stacked)
         self.menuBarLimit = defaults.enumValue(forKey: Self.menuBarLimitKey, default: .upToThree)
         self.menuBarAlwaysShows = defaults.bool(forKey: Self.menuBarAlwaysShowsKey)
         self.priorityLimits = PriorityLimits(

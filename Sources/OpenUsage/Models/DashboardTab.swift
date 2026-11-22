@@ -8,7 +8,7 @@ enum DashboardTab: String, Hashable, Sendable, CaseIterable {
     case allUsage
 
     static func preferred(in defaults: UserDefaults = .standard) -> Self {
-        defaults.enumValue(forKey: defaultKey, default: .priority)
+        defaults.enumValue(forKey: defaultKey, default: .allUsage)
     }
 
     var label: String {

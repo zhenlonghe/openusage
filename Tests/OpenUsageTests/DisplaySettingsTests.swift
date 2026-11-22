@@ -17,13 +17,13 @@ final class DisplaySettingsTests: QuietWindowTestCase {
 
     func testGeneralEndsWithAppearanceThenUpdates() async throws {
         try await assertHeadingsAndPickers(.general, [
-            DashboardTab.priority.label, "Appearance", AppearanceSetting.system.label, TimeFormatSetting.auto.label, "Updates",
+            DashboardTab.allUsage.label, "Appearance", AppearanceSetting.system.label, TimeFormatSetting.auto.label, "Updates",
         ])
     }
 
     func testDisplayHoldsMenuBarIconsThenUsageThenUnifyAccounts() async throws {
         try await assertHeadingsAndPickers(.display, [
-            "Menu Bar Icons", MenuBarLimit.upToThree.label, "Usage", WidgetDisplayMode.remaining.label, ResetDisplayMode.relative.label,
+            "Menu Bar Icons", MenuBarStyle.stacked.label, MenuBarLimit.upToThree.label, "Usage", WidgetDisplayMode.remaining.label, ResetDisplayMode.relative.label,
             "Unify Accounts",
         ])
     }

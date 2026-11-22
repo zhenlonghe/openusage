@@ -75,7 +75,7 @@ final class PopoverState {
     }
     /// The account the Add Account sheet signs in again, in place of adding a new one.
     var signingInAgainProviderID: String?
-    var dashboardTab = DashboardTab.priority
+    var dashboardTab = DashboardTab.allUsage
     var settingsTab = SettingsTab.general
     /// Whether the popover is on-screen. `StatusItemController` flips it at its show/hide chokepoints,
     /// synchronously with `makeKeyAndOrderFront`/`orderOut`, and `DashboardView` re-seeds the panel

@@ -195,11 +195,14 @@ final class MenuBarContentTests: XCTestCase {
     }
 
     func testThePreviewShowsExactlyTheNumberPicked() {
-        for limit in MenuBarLimit.allCases where limit != .iconOnly {
+        for limit in MenuBarLimit.allCases where limit != .iconOnly && limit != .all {
             let sample = PriorityIconsPreview.sample(limit: limit)
             XCTAssertEqual(sample.items.count, limit.count)
             XCTAssertGreaterThan(sample.overflow, 0, "\(limit) doesn't show the count of what's left out")
         }
+        let all = PriorityIconsPreview.sample(limit: .all)
+        XCTAssertEqual(all.overflow, 0)
+        XCTAssertFalse(all.isEmpty)
         XCTAssertTrue(PriorityIconsPreview.sample(limit: .iconOnly).isEmpty)
     }
 
@@ -263,5 +266,38 @@ final class MenuBarContentTests: XCTestCase {
         let board = PriorityBoard.make(accounts: [account], now: Date())
 
         XCTAssertEqual(MenuBarContentBuilder.build(board: board, limit: .upToFive).items.map(\.shortLabel), ["Extra"])
+    }
+
+    func testStackedModeStacksFirstTwoBoundedLimitsPerAccountInOrder() {
+        var session = limit("Session", used: 0)
+        session.displayMode = .remaining
+        var weekly = limit("Weekly", used: 16)
+        weekly.displayMode = .remaining
+        var extra = limit("Extra", used: 50)
+        extra.displayMode = .remaining
+
+        let strip = MenuBarContentBuilder.buildStacked(
+            accounts: [
+                account(personal, session, weekly, extra),
+                account(chatGPT, limit("Session", used: 40)),
+            ],
+            limit: .upToThree
+        )
+
+        XCTAssertEqual(strip.groups.count, 2)
+        XCTAssertEqual(strip.groups[0].metrics.map(\.value), ["100%", "84%"])
+        XCTAssertEqual(strip.groups[1].metrics.map(\.value), ["40%"])
+        XCTAssertEqual(strip.overflow, 0)
+        XCTAssertNotNil(MenuBarStripRenderer.image(for: strip))
+    }
+
+    func testMenuBarStyleDefaultsToStackedAndPersists() {
+        let defaults = isolatedDefaults()
+        let store = WidgetDataStore.forTesting([], defaults: defaults)
+        XCTAssertEqual(store.menuBarStyle, .stacked)
+
+        store.menuBarStyle = .priority
+        let relaunched = WidgetDataStore.forTesting([], defaults: defaults)
+        XCTAssertEqual(relaunched.menuBarStyle, .priority)
     }
 }

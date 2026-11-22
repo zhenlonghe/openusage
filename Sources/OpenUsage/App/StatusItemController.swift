@@ -203,11 +203,11 @@ final class StatusItemController: NSObject {
     }
 
     private func updateImage() {
-        let (accounts, pinned, burningFast, useItOrLoseIt, limit, alwaysShows, updateAvailable) = withObservationTracking {
+        let (accounts, pinned, burningFast, useItOrLoseIt, style, limit, alwaysShows, updateAvailable) = withObservationTracking {
             let limit = container.hideFromScreenShare.isConcealing ? .iconOnly : container.dataStore.menuBarLimit
             let accounts = limit == .iconOnly ? [] : container.dataStore.accounts(in: container.layout.displayGroups)
             return (accounts, container.layout.state.priorityPinIDs, container.dataStore.burningFast, container.dataStore.showsUseItOrLoseIt,
-                    limit, container.dataStore.menuBarAlwaysShows, updater.availableUpdateVersion != nil)
+                    container.dataStore.menuBarStyle, limit, container.dataStore.menuBarAlwaysShows, updater.availableUpdateVersion != nil)
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
                 try? await Task.sleep(for: .milliseconds(50))
@@ -215,17 +215,24 @@ final class StatusItemController: NSObject {
             }
         }
         rankingTick?.cancel()
-        showStrip(accounts: accounts, pinned: pinned, burningFast: burningFast, useItOrLoseIt: useItOrLoseIt, limit: limit,
+        showStrip(accounts: accounts, pinned: pinned, burningFast: burningFast, useItOrLoseIt: useItOrLoseIt, style: style, limit: limit,
                   alwaysShows: alwaysShows, updateAvailable: updateAvailable)
     }
 
     private func showStrip(
-        accounts: [DashboardAccount], pinned: Set<String>, burningFast: BurningFast?, useItOrLoseIt: Bool, limit: MenuBarLimit,
+        accounts: [DashboardAccount], pinned: Set<String>, burningFast: BurningFast?, useItOrLoseIt: Bool, style: MenuBarStyle, limit: MenuBarLimit,
         alwaysShows: Bool, updateAvailable: Bool
     ) {
         let now = Date()
-        let board = PriorityBoard.make(accounts: accounts, pinned: pinned, burningFast: burningFast, useItOrLoseIt: useItOrLoseIt, now: now)
-        var content = MenuBarContentBuilder.build(board: board, limit: limit, alwaysShows: alwaysShows)
+        let board: PriorityBoard? = style == .priority
+            ? PriorityBoard.make(accounts: accounts, pinned: pinned, burningFast: burningFast, useItOrLoseIt: useItOrLoseIt, now: now)
+            : nil
+        var content = switch style {
+        case .stacked:
+            MenuBarContentBuilder.buildStacked(accounts: accounts, limit: limit)
+        case .priority:
+            MenuBarContentBuilder.build(board: board!, limit: limit, alwaysShows: alwaysShows)
+        }
         content.updateAvailable = updateAvailable
         stripGate.show(content) { content in
             statusItem.button?.image = MenuBarStripRenderer.image(for: content)
@@ -233,11 +240,11 @@ final class StatusItemController: NSObject {
         }
         // The pace order can change between provider reads. A tick only reuses the current data;
         // registering another observation here would multiply subscriptions on every tick.
-        guard board.requiresRankingClock(at: now) else { return }
+        guard let board, board.requiresRankingClock(at: now) else { return }
         rankingTick = Task { [weak self] in
             try? await Task.sleep(for: .seconds(30), tolerance: .seconds(1))
             guard !Task.isCancelled else { return }
-            self?.showStrip(accounts: accounts, pinned: pinned, burningFast: burningFast, useItOrLoseIt: useItOrLoseIt, limit: limit,
+            self?.showStrip(accounts: accounts, pinned: pinned, burningFast: burningFast, useItOrLoseIt: useItOrLoseIt, style: style, limit: limit,
                             alwaysShows: alwaysShows, updateAvailable: updateAvailable)
         }
     }

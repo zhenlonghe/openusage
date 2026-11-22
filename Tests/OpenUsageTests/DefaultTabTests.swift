@@ -7,14 +7,14 @@ final class DefaultTabTests: XCTestCase {
         let defaults = isolatedDefaults()
         let popover = PopoverState()
 
-        popover.show(dashboardTab: .allUsage)
-        popover.show(dashboardTab: .preferred(in: defaults))
-        XCTAssertEqual(popover.dashboardTab, .priority)
-
-        defaults.set(DashboardTab.allUsage.rawValue, forKey: DashboardTab.defaultKey)
-        popover.dashboardTab = .priority
+        popover.show(dashboardTab: .priority)
         popover.show(dashboardTab: .preferred(in: defaults))
         XCTAssertEqual(popover.dashboardTab, .allUsage)
+
+        defaults.set(DashboardTab.priority.rawValue, forKey: DashboardTab.defaultKey)
+        popover.dashboardTab = .allUsage
+        popover.show(dashboardTab: .preferred(in: defaults))
+        XCTAssertEqual(popover.dashboardTab, .priority)
     }
 
     func testClosingThePanelReturnsSettingsToItsFirstTab() {

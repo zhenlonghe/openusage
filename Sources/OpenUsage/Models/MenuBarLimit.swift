@@ -7,6 +7,7 @@ enum MenuBarLimit: String, Hashable, Sendable, CaseIterable {
     case upToThree
     case upToFour
     case upToFive
+    case all
 
     var count: Int {
         switch self {
@@ -16,10 +17,15 @@ enum MenuBarLimit: String, Hashable, Sendable, CaseIterable {
         case .upToThree: 3
         case .upToFour: 4
         case .upToFive: 5
+        case .all: .max
         }
     }
 
     var label: String {
-        self == .iconOnly ? "App Icon Only" : "Up to \(count)"
+        switch self {
+        case .iconOnly: "App Icon Only"
+        case .all: "All"
+        default: "Up to \(count)"
+        }
     }
 }

@@ -171,6 +171,8 @@ struct AccountStatus {
     var refreshing = false
     var notice: String?
     var staleness: String?
+    /// The values are old because refreshes are failing, so the rows show dimmed.
+    var showsOldValues = false
     /// Opens the account's page, the same as Fix on Priority.
     var onFix: (() -> Void)?
 

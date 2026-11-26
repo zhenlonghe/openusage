@@ -101,7 +101,8 @@ Needs Attention when it needs you. Notifications stay per account.
 
 - A spinner after an account's name means it's refreshing.
 - A warning means its last refresh failed, or the provider has no usage to report for it.
-- A clock means its values are more than two refresh cycles old.
+- A clock means its values are more than two refresh cycles old. Once a refresh has failed, its rows
+  also show dimmed.
 
 Hover over the warning or the clock, or right-click the account, to see why.
 

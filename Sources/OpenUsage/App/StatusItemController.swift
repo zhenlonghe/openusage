@@ -304,6 +304,7 @@ final class StatusItemController: NSObject {
         let buttonRectOnScreen = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
         heightController.prepareForOpening(below: buttonRectOnScreen, tab: dashboardTab)
         container.popover.show(dashboardTab: dashboardTab)
+        container.panelDidOpen()
 
         host.layoutSubtreeIfNeeded()
 

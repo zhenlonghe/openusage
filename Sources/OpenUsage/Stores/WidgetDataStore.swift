@@ -137,6 +137,26 @@ final class WidgetDataStore {
         await refreshPass(registry.providers.map(\.id), force: force)
     }
 
+    /// Reads the accounts whose last reading shows a limit window that has reset since, without waiting
+    /// for the next pass. A wait after a failure still holds.
+    func refreshResetWindows() async {
+        let date = now()
+        let ids = registry.providers.map(\.id).filter {
+            inFlight[$0] == nil && backoffs[$0]?.holds(at: date, forced: false) != true
+                && snapshots[$0]?.hasResetWindow(at: date) == true
+        }
+        guard !ids.isEmpty else { return }
+        AppLog.notice(.refresh, "\(ids.count) providers have a window that reset")
+        await refresh(providerIDs: ids, force: false, maxAge: 0)
+    }
+
+    /// Opening the panel reads the accounts whose values are at least `panelOpenMaxAge` old, so opening
+    /// it again and again reads each account at most that often. A wait after a failure still holds. It
+    /// leaves `lastRefreshAt` alone, since the 5-minute pass keeps its own schedule.
+    func refreshForOpenedPanel() async {
+        await refresh(providerIDs: registry.providers.map(\.id), force: false, maxAge: RefreshSetting.panelOpenMaxAge)
+    }
+
     private func refreshPass(_ providerIDs: [String], force: Bool) async {
         let start = ProcessInfo.processInfo.systemUptime
         AppLog.notice(.refresh, "batch start (\(providerIDs.count) providers, force=\(force))")
@@ -151,9 +171,9 @@ final class WidgetDataStore {
     }
 
     @discardableResult
-    func refresh(providerIDs: [String], force: Bool) async -> [RefreshOutcome] {
+    func refresh(providerIDs: [String], force: Bool, maxAge: TimeInterval = RefreshSetting.interval) async -> [RefreshOutcome] {
         let tasks = providerIDs.map { providerID in
-            Task { await self.refresh(providerID: providerID, force: force, rereadHourly: force) }
+            Task { await self.refresh(providerID: providerID, force: force, rereadHourly: force, maxAge: maxAge) }
         }
         var outcomes: [RefreshOutcome] = []
         outcomes.reserveCapacity(tasks.count)
@@ -167,9 +187,11 @@ final class WidgetDataStore {
     enum RefreshOutcome: Sendable { case refreshed, failed, cacheHit, skipped, backedOff }
 
     @discardableResult
-    func refresh(providerID: String, force: Bool = false, rereadHourly: Bool = false) async -> RefreshOutcome {
+    func refresh(
+        providerID: String, force: Bool = false, rereadHourly: Bool = false, maxAge: TimeInterval = RefreshSetting.interval
+    ) async -> RefreshOutcome {
         if !force, let shown = snapshots[providerID],
-           (0..<RefreshSetting.interval).contains(now().timeIntervalSince(shown.refreshedAt)) {
+           (0..<maxAge).contains(now().timeIntervalSince(shown.refreshedAt)) {
             AppLog.debug(.refresh, "cache hit \(providerID)")
             return .cacheHit
         }
@@ -189,7 +211,7 @@ final class WidgetDataStore {
                 return .backedOff
             }
             if let next = inFlight[providerID], next != running {
-                return await refresh(providerID: providerID, force: force, rereadHourly: rereadHourly)
+                return await refresh(providerID: providerID, force: force, rereadHourly: rereadHourly, maxAge: maxAge)
             }
         }
         guard let provider = providersByID[providerID] else { return .skipped }
@@ -345,6 +367,12 @@ final class WidgetDataStore {
     /// Old values count only once a refresh has failed. Until then they are waiting for their next read, as on launch.
     func problem(for providerID: String) -> String? {
         notice(for: providerID) ?? (backoffs[providerID] == nil ? nil : stalenessHint(for: providerID))
+    }
+
+    /// The account's values are old because its refreshes are failing, so the dashboard dims them.
+    /// Old values waiting for their first read after launch don't count, the same as `problem(for:)`.
+    func showsOldValues(for providerID: String) -> Bool {
+        backoffs[providerID] != nil && snapshots[providerID]?.isStale(at: now()) == true
     }
 
     func stalenessHint(for providerID: String) -> String? {

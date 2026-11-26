@@ -39,6 +39,14 @@ struct ProviderSnapshot: Hashable, Sendable, Codable {
 
     func isStale(at date: Date) -> Bool { date >= staleAt }
 
+    /// A limit window this reading shows has reset since, so its values belong to the window that ended.
+    func hasResetWindow(at date: Date) -> Bool {
+        lines.contains { line in
+            guard case .progress(_, _, _, _, let resetsAt?, _) = line else { return false }
+            return resetsAt > refreshedAt && resetsAt.addingTimeInterval(RefreshSetting.rolloverGrace) <= date
+        }
+    }
+
     init(provider: Provider, plan: String?, lines: [MetricLine], notice: String? = nil, refreshedAt: Date = Date()) {
         self.init(providerID: provider.id, displayName: provider.displayName, plan: plan, lines: lines, notice: notice,
                   refreshedAt: refreshedAt)

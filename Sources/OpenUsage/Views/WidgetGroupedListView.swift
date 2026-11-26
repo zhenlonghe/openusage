@@ -50,6 +50,7 @@ struct WidgetGroupedListView: View {
             refreshing: ids.contains(where: dataStore.refreshingProviderIDs.contains),
             notice: noticed.flatMap(dataStore.notice(for:)),
             staleness: stale.flatMap(dataStore.stalenessHint(for:)),
+            showsOldValues: ids.contains(where: dataStore.showsOldValues(for:)),
             onFix: { popover.openAccounts(noticed ?? stale ?? ids[0]) }
         )
     }
@@ -72,9 +73,13 @@ struct WidgetGroupedListView: View {
         }
     }
 
+    /// How rows show while their account's refreshes are failing and its values are old.
+    private static let oldValuesOpacity = 0.5
+
     private func unifiedSection(_ account: DashboardAccount, in family: DashboardFamily) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            DashboardAccountCaption(account: account, plan: dataStore.plan(of: account), status: status(for: account))
+        let accountStatus = status(for: account)
+        return VStack(alignment: .leading, spacing: 0) {
+            DashboardAccountCaption(account: account, plan: dataStore.plan(of: account), status: accountStatus)
             DashboardLineStack(account: account) { line in
                 DashboardUnifiedRow(
                     line: line,
@@ -90,6 +95,7 @@ struct WidgetGroupedListView: View {
                     )
                 }
             }
+            .opacity(accountStatus.showsOldValues ? Self.oldValuesOpacity : 1)
         }
         .id(account.id)
     }
@@ -101,6 +107,7 @@ struct WidgetGroupedListView: View {
                                     status: accountStatus, hasSiblingAccounts: family.accounts.count > 1)
                 .highPriorityGesture(accountDragGesture(for: account, in: family))
             rows(of: account, status: accountStatus)
+                .opacity(accountStatus.showsOldValues ? Self.oldValuesOpacity : 1)
         }
         .contextMenu {
             DashboardMenu(

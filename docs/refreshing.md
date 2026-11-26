@@ -8,6 +8,8 @@ OpenUsage refreshes every account every 5 minutes. There is no setting for the i
 | --- | --- |
 | Launch | Accounts whose saved values are 5 minutes old or more |
 | Every 5 minutes | Every account. A pass missed during sleep runs on wake |
+| Opening the panel | Accounts whose values are 2 minutes old or more |
+| A limit window resetting | That account, 30 seconds after the reset its last values show |
 | Adding an account | That account |
 | **⌘R**, or clicking **Next update in …** | Every account, skipping the cache and the wait after a failure |
 | An account's **Refresh** menu item | Its accounts, like ⌘R |
@@ -15,7 +17,8 @@ OpenUsage refreshes every account every 5 minutes. There is no setting for the i
 | Launch, opening Accounts, **⌘R**, and hourly | Each [CLIProxyAPI hub](cliproxyapi.md#staying-in-sync)'s login list. ⌘R reads it before usage |
 | Replacing a hub's management key | Every account from that hub |
 
-A wait a provider asked for (HTTP 429) holds even for ⌘R. Accounts fetch in parallel.
+A wait a provider asked for (HTTP 429) holds even for ⌘R. Opening the panel and a reset window also
+wait out a failure, like the 5-minute pass. Accounts fetch in parallel.
 
 ## Caching
 
@@ -64,7 +67,8 @@ An account that doesn't answer within two minutes shows "Refresh timed out after
 again on a later pass.
 
 Values more than two refresh cycles old get a clock next to the account's name, and the
-[`openusage` command](cli.md) marks them `"stale": true`.
+[`openusage` command](cli.md) marks them `"stale": true`. Once a refresh has failed, they also show
+dimmed in All Usage until the next successful refresh.
 
 ## Expired sign-ins
 

@@ -18,6 +18,7 @@ final class AppContainer {
     @ObservationIgnored private var providers: [ProviderRuntime]
     @ObservationIgnored private let makeRuntimes: RuntimeFactory
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
+    @ObservationIgnored private var resetWindowTask: Task<Void, Never>?
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let claudeSessions: ClaudeSessions
@@ -80,6 +81,7 @@ final class AppContainer {
 
     deinit {
         refreshTask?.cancel()
+        resetWindowTask?.cancel()
     }
 
     func resetClaim(for providerID: String) -> ResetClaimService? {
@@ -179,8 +181,20 @@ final class AppContainer {
         await dataStore.refreshAll(force: true)
     }
 
+    /// Opening the panel reads accounts whose values are a couple of minutes old.
+    func panelDidOpen() {
+        Task { await dataStore.refreshForOpenedPanel() }
+    }
+
     func startRefreshing() {
         guard refreshTask == nil else { return }
+        resetWindowTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(RefreshSetting.rolloverCheckInterval))
+                guard !Task.isCancelled else { return }
+                await dataStore.refreshResetWindows()
+            }
+        }
         refreshTask = Task {
             while !Task.isCancelled {
                 await hubs.syncDue()

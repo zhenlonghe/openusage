@@ -1,3 +1,12 @@
+# Preface
+
+这是基于 OpenUsage 做的适合我的版本
+参考：
+- https://github.com/robinebers/openusage
+- https://github.com/vinzdg/codenotch
+
+
+
 # OpenUsage
 
 Track your AI coding subscriptions from the macOS menu bar.
